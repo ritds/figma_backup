@@ -1,0 +1,6 @@
+access_token: 'your_figma_access_token'
+output_limit: 100
+age_limit: 1
+teams:
+    - you_team_id
+    
