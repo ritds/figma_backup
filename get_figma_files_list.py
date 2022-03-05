@@ -1,6 +1,8 @@
 #!/usr/bin/python3 -u
 
 import json
+import os
+import shutil
 from datetime import datetime
 from pathlib import Path
 from urllib import request
@@ -9,7 +11,7 @@ from yaml import load, Loader
 
 
 class FigmaFilesListGetter(object):
-    def __init__(self, config_file_path: Path = Path('./../get_figma_files_list.yml')):
+    def __init__(self, config_file_path: Path = Path('./config/get_figma_files_list.yml')):
         with open(config_file_path) as config_file:
             self.config = load(config_file, Loader)
 
@@ -114,11 +116,13 @@ class FigmaFilesListGetter(object):
 
     def _get_project_files(self, project: dict) -> list:
         api_request_url = f'https://api.figma.com/v1/projects/{project["id"]}/files'
+        today = datetime.today().strftime('%Y-%m-%d')
 
         print(f'Getting project files, requesting URL: {api_request_url}')
 
         api_response = self._http_request(
             api_request_url, 'GET', self.token_header)
+
         api_response_data = json.loads(api_response['data'].decode('utf-8'))
 
         print(f'Status: {api_response["status"]}')
@@ -129,36 +133,37 @@ class FigmaFilesListGetter(object):
 
         project_name = api_response_data.get('name', project['id'])
         project_files = []
-        age_limit = self.config.get('age_limit', 0)
 
         for file in api_response_data.get('files', []):
-            # last_modified = datetime.strptime(file['last_modified'], '%Y-%m-%dT%H:%M:%SZ')
-            # now = datetime.utcnow()
 
-            age = int(
-                (
-                    datetime.utcnow() -
-                    datetime.strptime(
-                        file['last_modified'], '%Y-%m-%dT%H:%M:%SZ')
-                ).total_seconds() / 86400
-            )
-
-            print(
-                f'File {file["key"]}, last modified: {file["last_modified"]}, age: {age}')
-
-            # if not age_limit or age < age_limit:
-            print('    -> adding to the list')
-
-            project_files.append(
-                {
-                    'key': file['key'],
-                    'project': project_name,
-                    'team': project['team']
-                }
-            )
-
-            # else:
-            #    print('    -> do not adding to the list')
+            file_name_to_check = f'./store/TEAM {project["team"]}/PROJECT {project_name}/{file["name"]}.fig'
+            time = 0
+            if os.path.isfile(file_name_to_check):
+                time = os.path.getmtime(
+                    f'./store/TEAM {project["team"]}/PROJECT {project_name}/{file["name"]}.fig')
+            updates = datetime.strptime(
+                file["last_modified"], "%Y-%m-%dT%H:%M:%SZ").timestamp()
+            print(f'time: {time}, updated: {updates}')
+            if time < updates:
+                print(
+                    f'File TEAM {project["team"]}/PROJECT {project_name}/{file["name"]}, key {file["key"]}, last modified: {file["last_modified"]} -> adding to the list')
+                project_files.append(
+                    {
+                        'key': file['key'],
+                        'project': project_name,
+                        'team': project['team'],
+                        'last_modified': file['last_modified']
+                    }
+                )
+                if os.path.isfile(file_name_to_check):
+                    if not os.path.exists(f'./store/{today}/TEAM {project["team"]}/PROJECT {project_name}/'):
+                        os.makedirs(f'./store/{today}')
+                    shutil.copyfile(
+                        file_name_to_check, f'./store/{today}/TEAM {project["team"]}/PROJECT {project_name}/{file["name"]}.fig')
+                    os.remove(file_name_to_check)
+            else:
+                print(
+                    f'File {project["team"]}/{project_name}/{file["name"]}, key {file["key"]}, last modified: {file["last_modified"]} not modifided')
 
         return project_files
 
@@ -206,7 +211,7 @@ class FigmaFilesListGetter(object):
         projects_files = self._get_projects_files(projects)
         files = self._merge_files(projects_files)
         output_file_path = Path(self.config.get(
-            'output_file', './figma_files_list.json'))
+            'output_file', './process/figma_files_list.json'))
         output_limit = self.config.get('output_limit', 0)
 
         if not output_limit or len(files) <= output_limit:
