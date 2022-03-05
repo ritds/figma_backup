@@ -1,0 +1,5 @@
+access_token: 'your-access-tokens'
+output_limit: 100
+age_limit: 1
+teams:
+    - your-team-id
