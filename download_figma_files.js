@@ -248,6 +248,12 @@ const puppeteer = require('puppeteer');
                 fse.moveSync(downloadDir + fileName+'.fig', downloadDir + fileName + '_' + now + '.fig')
             }
 
+            if (fs.existsSync(downloadDir + fileName+'.jam')) {
+                const now = new Date().toISOString().substring(0, 19).replaceAll('T', '_').replaceAll(':','-');
+                fse.moveSync(downloadDir + fileName+'.jam', downloadDir + fileName + '_' + now + '.jam')
+            }
+
+
             console.log("Directory to save the file: '" + downloadDir + "'");
 
             fs.mkdirSync(downloadDir, {recursive: true});
@@ -321,6 +327,11 @@ const puppeteer = require('puppeteer');
                 await sleep(1000);
 
                 if (fs.existsSync(downloadDir + fileName+'.fig')) {
+                    console.log('Download complete');
+                    break;
+                }
+
+                if (fs.existsSync(downloadDir + fileName+'.jam')) {
                     console.log('Download complete');
                     break;
                 }
