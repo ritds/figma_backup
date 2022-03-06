@@ -1,6 +1,6 @@
 {
-    "downloadTimeout": 0,
-    "selectorTimeout": 2000,
+    "downloadTimeout": 300,
+    "selectorTimeout": 20000,
     "navigationTimeout": 180000,
     "launchTimeout": 120000,
     "loginTimeout": 10000,

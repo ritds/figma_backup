@@ -181,22 +181,13 @@ const puppeteer = require('puppeteer');
         console.log('\nStarting to process new file (' + (i + 1) + '/' + figmaFilesList.length + '), url: ' + filePage);
 
         try {
-            // Opening an empty page
-            console.log('Opening an empty page');
-            await page.goto('about:blank');
-
-            // Sleeping for 3 seconds
-            await sleep(3000);
-
             // Opening a file page
             console.log('Opening the file page: ' + filePage);
             let filePageResponse = await page.goto(filePage, {waitUntil: 'networkidle2'});
 
 
             // Checking status code
-
             console.log('Returned status: ' + filePageResponse.status());
-
             if(filePageResponse.status() !== 200) {
                 console.log('Skipping the file');
                 continue;
@@ -216,13 +207,12 @@ const puppeteer = require('puppeteer');
             // Getting and validating page title
 
             const title = await page.title();
-            console.log("Page title: '" + title + "'");
-
             if(!title.endsWith(' – Figma')) {
-                console.log('Title format seems to be unrecognized, skipping the file')
+                console.log(`Title format "${title}" seems to be unrecognized, skipping the file`)
+                await page.screenshot({path: debugDir + 'login_screenshot' + '.png', fullPage: true});
                 continue;
             }
-            const fileName = title.replace(' – Figma', '');
+            const fileName = title.replace(' – Figma', '').replaceAll('/', '_').replaceAll('|', '_').replaceAll('"', '_');
             // Getting the local path of the directory for the file to download
 
             let downloadDir = downloadsBaseDir;
@@ -254,7 +244,7 @@ const puppeteer = require('puppeteer');
             }
 
 
-            console.log("Directory to save the file: '" + downloadDir + "'");
+            console.log(`Directory to save the file: ${downloadDir}${fileName}`);
 
             fs.mkdirSync(downloadDir, {recursive: true});
 
@@ -284,8 +274,8 @@ const puppeteer = require('puppeteer');
             } catch (error) {
                 if(debugDir && !menuItemFileHandle) {
                     console.log('cannot open main menu')
-                    fs.writeFile(debugDir + (i + 1) + '_main_menu' + '.html', content, () => {});
-                    await page.screenshot({path: debugDir + (i + 1) + '_main_menu_screenshot' + '.png', fullPage: true});
+                    fs.writeFile(debugDir + fileName + '_main_menu' + '.html', content, () => {});
+                    await page.screenshot({path: debugDir + fileName + '_main_menu_screenshot' + '.png', fullPage: true});
                 }
                 throw error;
             }
@@ -310,8 +300,8 @@ const puppeteer = require('puppeteer');
 
                 if(debugDir && !submenuFileHandle) {
                     console.log('cannot open file menu')
-                    fs.writeFile(debugDir + (i + 1) + '_file_menu' + '.html', content, () => {});
-                    await page.screenshot({path: debugDir + (i + 1) + '_file_menu_screenshot' + '.png', fullPage: true});
+                    fs.writeFile(debugDir + fileName + '_file_menu' + '.html', content, () => {});
+                    await page.screenshot({path: debugDir + fileName + '_file_menu_screenshot' + '.png', fullPage: true});
                 }
                 throw error;
             }
@@ -325,23 +315,21 @@ const puppeteer = require('puppeteer');
 
             for(let j = 0; downloadedCheckTries == 0 || j < downloadedCheckTries; j++) {
                 await sleep(1000);
-
                 if (fs.existsSync(downloadDir + fileName+'.fig')) {
                     console.log('Download complete');
                     break;
                 }
-
                 if (fs.existsSync(downloadDir + fileName+'.jam')) {
                     console.log('Download complete');
                     break;
                 }
                 
                 if (j % 30 == 0) {
-                    console.log(`waiting files to download for ${parseInt(j / 60)} min ${j % 60} sec.`)
+                    console.log(`waiting file to download for ${parseInt(j / 60)} min ${j % 60} sec.`)
                 }
 
                 if(downloadedCheckTries > 0 && j === (downloadedCheckTries - 1)) {
-                    console.log('File is not downloaded during timeout')
+                    console.log(`File ${downloadDir + fileName} is not downloaded during timeout`)
                 }
             }
         } catch (err) {

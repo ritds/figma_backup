@@ -156,8 +156,13 @@ class FigmaFilesListGetter(object):
                     }
                 )
                 if os.path.isfile(file_name_to_check):
-                    if not os.path.exists(f'./store/{today}/TEAM {project["team"]}/PROJECT {project_name}/'):
+                    if not os.path.exists(f'./store/{today}'):
                         os.makedirs(f'./store/{today}')
+                    if not os.path.exists(f'./store/{today}/TEAM {project["team"]}'):
+                        os.makedirs(f'./store/{today}/TEAM {project["team"]}')
+                    if not os.path.exists(f'./store/{today}/TEAM {project["team"]}/PROJECT {project_name}/'):
+                        os.makedirs(
+                            f'./store/{today}/TEAM {project["team"]}/PROJECT {project_name}/')
                     shutil.copyfile(
                         file_name_to_check, f'./store/{today}/TEAM {project["team"]}/PROJECT {project_name}/{file["name"]}.fig')
                     os.remove(file_name_to_check)
