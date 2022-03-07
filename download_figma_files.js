@@ -163,6 +163,22 @@ const puppeteer = require('puppeteer');
         process.exit(1);
     }
 
+    if (!downloadsBaseDir.endsWith('/')) {
+        downloadsBaseDir += '/'
+    }
+
+    let tmpDownloadDir = `${downloadsBaseDir}tmp/`;
+    
+    for (let t = 1; t < 1000; t++) {
+        if (!fs.existsSync(tmpDownloadDir)) {
+            break;
+        }
+        tmpDownloadDir = `${downloadsBaseDir}tmp${t}/`;
+    }
+    fs.mkdirSync(tmpDownloadDir, {recursive: true});
+
+    console.log(`Tmp directory to save the file: ${tmpDownloadDir}`);
+
     // Processing Figma files
 
     for(let i = 0; i < figmaFilesList.length; i++) {
@@ -233,24 +249,13 @@ const puppeteer = require('puppeteer');
             }
 
             
-            if (fs.existsSync(downloadDir + fileName+'.fig')) {
-                const now = new Date().toISOString().substring(0, 19).replaceAll('T', '_').replaceAll(':','-');
-                fse.moveSync(downloadDir + fileName+'.fig', downloadDir + fileName + '_' + now + '.fig')
-            }
 
-            if (fs.existsSync(downloadDir + fileName+'.jam')) {
-                const now = new Date().toISOString().substring(0, 19).replaceAll('T', '_').replaceAll(':','-');
-                fse.moveSync(downloadDir + fileName+'.jam', downloadDir + fileName + '_' + now + '.jam')
-            }
-
-
-            console.log(`Directory to save the file: ${downloadDir}${fileName}`);
+            console.log(`Directory to save the file: ${downloadDir}`);
 
             fs.mkdirSync(downloadDir, {recursive: true});
 
-
             // Set download behavior
-            await page._client.send('Page.setDownloadBehavior', {behavior: 'allow', downloadPath: downloadDir});
+            await page._client.send('Page.setDownloadBehavior', {behavior: 'allow', downloadPath: tmpDownloadDir});
 
             // Debug: making screenshot and saving the page content
             if(debugDir) {
@@ -313,13 +318,29 @@ const puppeteer = require('puppeteer');
 
             let downloadedCheckTries = settings.downloadTimeout;
 
+            let downloaded = false;
             for(let j = 0; downloadedCheckTries == 0 || j < downloadedCheckTries; j++) {
+                
                 await sleep(1000);
-                if (fs.existsSync(downloadDir + fileName+'.fig')) {
-                    console.log('Download complete');
-                    break;
-                }
-                if (fs.existsSync(downloadDir + fileName+'.jam')) {
+                fs.readdir(tmpDownloadDir, (err, files) => {
+                    let donwloadedFile = ''
+                    if (files && files.length > 0) {
+                        donwloadedFile = files[0]
+                    }
+
+                    if (donwloadedFile.length) {
+                        if (fs.existsSync(downloadDir + donwloadedFile)) {
+                            const tmpFileName = donwloadedFile.lastIndexOf('.');
+                            const now = new Date().toISOString().substring(0, 19).replaceAll('T', '_').replaceAll(':','-');
+                            fse.moveSync(downloadDir + donwloadedFile, downloadDir + donwloadedFile.substring(0, tmpFileName) + '_' + now + donwloadedFile.substring(tmpFileName))
+                        }
+                        fse.moveSync(tmpDownloadDir + donwloadedFile, downloadDir + donwloadedFile);
+                        
+                        downloaded = true;
+                    }
+                });
+
+                if (downloaded) {
                     console.log('Download complete');
                     break;
                 }
@@ -329,7 +350,7 @@ const puppeteer = require('puppeteer');
                 }
 
                 if(downloadedCheckTries > 0 && j === (downloadedCheckTries - 1)) {
-                    console.log(`File ${downloadDir + fileName} is not downloaded during timeout`)
+                    console.log(`File ${title} is not downloaded during timeout`)
                 }
             }
         } catch (err) {
@@ -337,6 +358,7 @@ const puppeteer = require('puppeteer');
             continue;
         }
     }
+    fs.rmdirSync(tmpDownloadDir);
 
     // Closing Chromium
     browser.close();
