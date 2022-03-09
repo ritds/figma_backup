@@ -1,3 +1,16 @@
-/node_modules
+# IDE, System
+.DS_Store
+.idea
+.vscode
+
+# Packages
+node_modules/
+npm-debug.log
+package-lock.json
+
+# Auto-generated
 /process
 /store
+
+# Dump
+/work
