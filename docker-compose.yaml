@@ -8,4 +8,4 @@ services:
       - "./store:/app/figma/store"
     environment:
       USER: 'your-figma-user'
-      PASSWORD: 'your-figma-password
+      PASSWORD: 'your-figma-password'
