@@ -4,8 +4,8 @@
 let figmaLogin = '';
 let figmaPassword = '';
 let figmaFilesListFile = '';
-let downloadsBaseDir = './process/_downloads';
-let debugDir = './process/debug';
+let downloadsBaseDir = '';
+let debugDir = '';
 let figmaUrl = '';
 let settingFile = '';
 

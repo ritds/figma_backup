@@ -1,6 +1,9 @@
 {
   "dependencies": {
+    "date-and-time": "^2.3.0",
     "fs-extra": "^10.0.1",
-    "puppeteer": "^13.4.1"
+    "puppeteer": "^13.4.1",
+    "xmlhttprequest": "^1.8.0",
+    "yaml": "^1.10.2"
   }
 }

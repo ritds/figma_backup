@@ -26,8 +26,8 @@ const downloadFigmaFiles = async(config = {}) => {
         figmaPassword,
         figmaFilesListFile,
         figmaUrl,
-        downloadsBaseDir,
-        debugDir,
+        downloadsBaseDir = './process/_downloads',
+        debugDir = './process/debug',
         settingFile,
     } = config
 

@@ -1,5 +1,6 @@
 // import json
 const fs = require('fs')
+const fsPromises = require('fs/promises')
 const path = require('path')
 const yaml = require('yaml')
 const date = require('date-and-time')
@@ -259,36 +260,35 @@ class FigmaFilesListGetter{
         const projects_files = await this.get_projects_files(projects)
         const files = this.merge_files(projects_files)
         console.log('files', files)
-//         const output_file_path = Path(self.config.get(
-//             'output_file', './process/figma_files_list.json'))
-//         const output_limit = self.config.get('output_limit', 0)
-// 
-//         if not output_limit or len(files) <= output_limit:
-//             console.log('Writing the single output file')
-// 
-//             with open(output_file_path, 'w', encoding='utf8') as output_file:
-//                 json.dump(files, output_file, ensure_ascii=False, indent=4)
-// 
-//         else:
-//             console.log('Writing multiple output files with partial slices')
-// 
-//             parts_count = int((len(files) - 1) / output_limit) + 1
-// 
-//             for part_number in range(1, parts_count + 1):
-//                 start = output_limit * (part_number - 1)
-//                 stop = output_limit * (part_number)
-//                 files_part = files[start:stop]
-// 
-//                 partial_output_file_path = (
-//                     output_file_path.parent /
-//                     f'{output_file_path.stem}_part_{part_number}{output_file_path.suffix}'
-//                 )
-// 
-//                 with open(partial_output_file_path, 'w', encoding='utf8') as partial_output_file:
-//                     json.dump(files_part, partial_output_file,
-//                               ensure_ascii=False, indent=4)
-// 
-//         console.log('Done')
+
+        const output_file_path = this.config.output_file||'./process/figma_files_list.json'
+        const output_limit = this.config.output_limit||0
+
+        if(!output_limit || files.length <= output_limit){
+            console.log('Writing the single output file')
+            await fsPromises.writeFile(output_file_path, JSON.stringify(files, null, ' '))
+        }else{
+            console.log('Writing multiple output files with partial slices')
+
+            const parts_count = (((files.length - 1) / output_limit)|0) + 1
+
+            for(let part_number = 1; part_number <= parts_count + 1; part_number++){
+                const start = output_limit * (part_number - 1)
+                const stop = output_limit * (part_number)
+                const files_part = files.slice(start,stop)
+
+                const suffix = path.extname(output_file_path)
+                const stem = path.basename(output_file_path, suffix)
+                const parent = path.dirname(output_file_path)
+                const partial_output_file_path = path.join(parent, `${stem}_part_${part_number}${suffix}`)
+
+                await fsPromises.writeFile(partial_output_file_path, JSON.stringify(files_part, null, ' '))
+                // with open(partial_output_file_path, 'w', encoding='utf8') as partial_output_file:
+                //     json.dump(files_part, partial_output_file,
+                //               ensure_ascii=False, indent=4)
+            }
+        }
+        console.log('Done')
 
     }
 }
