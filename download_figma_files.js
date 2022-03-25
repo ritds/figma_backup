@@ -206,6 +206,7 @@ const puppeteer = require('puppeteer');
             console.log('Returned status: ' + filePageResponse.status());
             if(filePageResponse.status() !== 200) {
                 console.log('Skipping the file');
+                fs.appendFileSync('./process/download_errors.txt', `${filePage}\n`, () => {});
                 continue;
             } 
             // Sleeping for 10 seconds, waiting for a specific element in React-generated content
@@ -218,6 +219,7 @@ const puppeteer = require('puppeteer');
 
             if(content.includes('="Viewers can\'t copy or share this file."')) {
                 console.log('This file is protected against saving locally and sharing. Skipping')
+                fs.appendFileSync('./process/download_errors.txt', `${filePage}\n`, () => {});
                 continue;
             }
             // Getting and validating page title
@@ -226,6 +228,7 @@ const puppeteer = require('puppeteer');
             if(!title.endsWith(' – Figma')) {
                 console.log(`Title format "${title}" seems to be unrecognized, skipping the file`)
                 await page.screenshot({path: debugDir + 'login_screenshot' + '.png', fullPage: true});
+                fs.appendFileSync('./process/download_errors.txt', `${filePage}\n`, () => {});
                 continue;
             }
             const fileName = title.replace(' – Figma', '').replaceAll('/', '_').replaceAll('|', '_').replaceAll('"', '_');
@@ -297,6 +300,7 @@ const puppeteer = require('puppeteer');
                     const newFileItem = await page.waitForSelector('div[data-testid="dropdown-option-New design file"]', {timeout: settings.selectorTimeout});
                     if (newFileItem) {
                         console.log('cannot save copy export not allowed')
+                        fs.appendFileSync('./process/download_errors.txt', `${filePage}\n`, () => {});
                         continue;
                     }
                 } catch (error) {
@@ -350,11 +354,13 @@ const puppeteer = require('puppeteer');
                 }
 
                 if(downloadedCheckTries > 0 && j === (downloadedCheckTries - 1)) {
-                    console.log(`File ${title} is not downloaded during timeout`)
+                    console.log(`File ${title} is not downloaded during timeout`);
+                    fs.appendFileSync('./process/download_errors.txt', `${filePage}\n`, () => {});
                 }
             }
         } catch (err) {
             console.error(err);
+            fs.appendFileSync('./process/download_errors.txt', `${filePage}\n`, () => {});
             continue;
         }
     }
