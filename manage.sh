@@ -61,6 +61,7 @@ fi
 rm -rf ${working_dir_path}
 mkdir -p ${working_dir_path}/
 mkdir -p ${store_dir_path}/
+touch ${working_dir_path}/download_errors.txt
 
 
 # Getting files list
@@ -78,4 +79,9 @@ for list_name in ${list_names} ; do
     sleep 30
 done
 
-echo 'DONE'
+if [ -s ${working_dir_path}/download_errors.txt ]; then
+        echo -e "\n\nCan't download files:"
+        cat ${working_dir_path}/download_errors.txt
+fi
+
+echo -e "\n\nDONE"
