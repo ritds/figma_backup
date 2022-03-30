@@ -2,7 +2,6 @@
 
 import json
 import os
-import shutil
 from datetime import datetime
 from pathlib import Path
 from urllib import request
@@ -116,7 +115,6 @@ class FigmaFilesListGetter(object):
 
     def _get_project_files(self, project: dict) -> list:
         api_request_url = f'https://api.figma.com/v1/projects/{project["id"]}/files'
-        today = datetime.today().strftime('%Y-%m-%d')
 
         print(f'Getting project files, requesting URL: {api_request_url}')
 
@@ -135,37 +133,64 @@ class FigmaFilesListGetter(object):
         project_files = []
 
         for file in api_response_data.get('files', []):
+            # if not os.path.exists(f'./store/TEAM {project["team"]}'):
+            #     os.makedirs(f'./store/TEAM {project["team"]}')
+            # if not os.path.exists(f'./store/TEAM {project["team"]}/PROJECT {project_name}/'):
+            #     os.makedirs(
+            #         f'./store/TEAM {project["team"]}/PROJECT {project_name}/')
+            # if not os.path.exists(f'./store/TEAM {project["team"]}/PROJECT {project_name}/map/'):
+            #     os.makedirs(
+            #         f'./store/TEAM {project["team"]}/PROJECT {project_name}/map/')
 
-            file_name_to_check = f'./store/TEAM {project["team"]}/PROJECT {project_name}/{file["name"]}.fig'
+            fileName = f'{file["name"]}'
+            fileName = fileName.replace('/', '_')
+            fileName = fileName.replace('?', '_')
+            fileName = fileName.replace('"', '_')
+
+            file_name_to_check = f'{fileName}.fig'
+            map_file = f'./store/TEAM {project["team"]}/PROJECT {project_name}/map/{file["key"]}'
+
+            if os.path.isfile(map_file):
+                with open(map_file) as map_fl:
+                    tmp = map_fl.read()
+                    if tmp != 'none':
+                        file_name_to_check = tmp
+
+            full_file_name = f'./store/TEAM {project["team"]}/PROJECT {project_name}/{file_name_to_check}'
+
             time = 0
-            if os.path.isfile(file_name_to_check):
-                time = os.path.getmtime(
-                    f'./store/TEAM {project["team"]}/PROJECT {project_name}/{file["name"]}.fig')
+            if os.path.isfile(full_file_name):
+                time = os.path.getmtime(full_file_name)
+                if os.path.isfile(map_file):
+                    os.remove(map_file)
+                with open(map_file, "w") as text_file:
+                    text_file.write(file_name_to_check)
+            else:
+                file_name_to_check = f'{fileName}.jam'
+                full_file_name = f'./store/TEAM {project["team"]}/PROJECT {project_name}/{file_name_to_check}'
+                if os.path.isfile(full_file_name):
+                    time = os.path.getmtime(full_file_name)
+                    if os.path.isfile(map_file):
+                        os.remove(map_file)
+                    with open(map_file, "w") as text_file:
+                        text_file.write(file_name_to_check)
+
             updates = datetime.strptime(
                 file["last_modified"], "%Y-%m-%dT%H:%M:%SZ").timestamp()
             print(f'time: {time}, updated: {updates}')
             if time < updates:
                 print(
-                    f'File TEAM {project["team"]}/PROJECT {project_name}/{file["name"]}, key {file["key"]}, last modified: {file["last_modified"]} -> adding to the list')
+                    f'File TEAM {project["team"]}/PROJECT {project_name}/{fileName}, key {file["key"]}, last modified: {file["last_modified"]} -> adding to the list')
                 project_files.append(
                     {
                         'key': file['key'],
                         'project': project_name,
                         'team': project['team'],
-                        'last_modified': file['last_modified']
+                        'file': file["name"],
+                        'last_modified': file['last_modified'],
+                        'path': f'./store/TEAM {project["team"]}/PROJECT {project_name}/'
                     }
                 )
-                if os.path.isfile(file_name_to_check):
-                    if not os.path.exists(f'./store/{today}'):
-                        os.makedirs(f'./store/{today}')
-                    if not os.path.exists(f'./store/{today}/TEAM {project["team"]}'):
-                        os.makedirs(f'./store/{today}/TEAM {project["team"]}')
-                    if not os.path.exists(f'./store/{today}/TEAM {project["team"]}/PROJECT {project_name}/'):
-                        os.makedirs(
-                            f'./store/{today}/TEAM {project["team"]}/PROJECT {project_name}/')
-                    shutil.copyfile(
-                        file_name_to_check, f'./store/{today}/TEAM {project["team"]}/PROJECT {project_name}/{file["name"]}.fig')
-                    os.remove(file_name_to_check)
             else:
                 print(
                     f'File {project["team"]}/{project_name}/{file["name"]}, key {file["key"]}, last modified: {file["last_modified"]} not modifided')
