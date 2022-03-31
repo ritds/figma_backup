@@ -34,7 +34,7 @@ function readSettings() {
         pageOpenTimeout: 10000,
         pageLoadTimeout: 60000,
         downloadsBaseDir: './process/_downloads',
-        debugDir: './process/debug',
+        debugDir: './process/debug/',
         doDebug: false,
         saveScreenOnError: true
     }
@@ -291,7 +291,7 @@ async function downloadFile(session, file, settings) {
 
             if (downloaded) {
                 logger.info('Download complete');
-                return 0;
+                break;
             }
             
             if (j % 30 == 0) {
@@ -302,7 +302,7 @@ async function downloadFile(session, file, settings) {
                 logger.info(`File ${title} is not downloaded during timeout`)
             }
         }
-        
+
         if (fs.existsSync(tmpDownloadDir)) {
             fs.rmdirSync(tmpDownloadDir);
         }
