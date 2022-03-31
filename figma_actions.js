@@ -302,16 +302,19 @@ async function downloadFile(session, file, settings) {
                 logger.info(`File ${title} is not downloaded during timeout`)
             }
         }
-
-        if (fs.existsSync(tmpDownloadDir)) {
-            fs.rmdirSync(tmpDownloadDir);
-        }
     
     } catch (err) {
         console.error(err);
         return UNKNOWN_ERROR;
     }
     
+    try {
+        if (fs.existsSync(tmpDownloadDir)) {
+            fs.rmdirSync(tmpDownloadDir);
+        }
+    } catch (err) {
+        
+    }
 
     return 0;
 }
