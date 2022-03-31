@@ -1,0 +1,11 @@
+version: "3"
+
+services:
+  figma:
+    build: .
+    volumes:
+      - "./config:/app/figma/config"
+      - "./store:/app/figma/store"
+    environment:
+      USER: 'your-figma-user'
+      PASSWORD: 'your-figma-password'
